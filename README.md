@@ -16,12 +16,13 @@
 | 屏幕 | BOE NS160QDM-NY2，16 英寸 2560×1600 180Hz | 能用，这是这台机器最值钱的部分 |
 | 无线 | Intel Wi-Fi 6 AX201 | 能用（AirportItlwm）。隔空投送、随航别想，Intel 网卡的通病 |
 | 蓝牙 | Intel 蓝牙 | 能用（IntelBluetoothFirmware + BlueToolFixup） |
-| 有线网卡 | Motorcomm YT6801 | 不能用。没驱动，插网线等于插了根装饰品 |
+| 有线网卡 | Motorcomm YT6801 | 能用（MiniYv 的 DriverKit 驱动，见 `Drivers/YT6801/`，需进 macOS 安装） |
 | 声卡 | Conexant CX8070 | 能用，但见下文，这是全场唯一需要手工伺候的部件 |
 | SMBIOS | `MacBookPro16,1` | 伪装成 2019 年 16 寸 MBP。那年它还在用 Intel，我们也是 |
 
 ## 目录结构
 
+- `Drivers/YT6801/` — YT6801 有线网卡 DriverKit 安装包、上游 GPL 许可证和原作者说明
 - `Sequoia_15.8.1_EFI_WithDriver/` — Sequoia 15.8.1，装好第三方 NVIDIA 驱动之后用
 - `Tahoe_26.7.1/Tahoe_WithDriver/` — Tahoe 26.7.1 主力配置，装好驱动之后用
 - `Tahoe_26.7.1/Tahoe_NoNVDriver/` — 安装阶段用的。这时候系统里还没装第三方 NVIDIA 驱动（NullMoth / nvidia-macos-driver），先拿它把 macOS 装进去：
@@ -29,6 +30,14 @@
   - `EFI_v2` — 完全另一套思路（itlwm + USBToolBox + 自己一整套 SSDT），没有 AppleALC，也没有任何声卡处理
 
 顺序别搞反：先用 `NoNVDriver` 把系统装完、把驱动装好，再换 `WithDriver` 正常用。装都没装就上 `WithDriver`，它也不知道该驱动谁。
+
+## 有线网卡 YT6801：进 macOS 安装 DEXT
+
+有线网卡现在能用，安装包在 [Drivers/YT6801/](Drivers/YT6801/)。进入 macOS 后打开其中的 `YT6801-Installer-1.0.13-fixed.dmg`，运行安装器并按提示批准系统扩展；通常不需要重启。
+
+它是 **DriverKit 系统扩展，不是 KEXT**，所以不要放进 `EFI/OC/Kexts`，也不用改 `config.plist`。驱动支持 macOS 15.2+、Intel x86_64 和本机的 `1f0a:6801`。
+
+**原作者与许可**：macOS 驱动及安装器由 **MiniYv（小禹）**开发，底层来自 **Motor-comm Corporation** 的 Linux `fuxi-gmac` 驱动，依照 **GPL-2.0-or-later** 分发。完整许可和原始版权说明见 [LICENSE](Drivers/YT6801/LICENSE) 与 [NOTICE](Drivers/YT6801/NOTICE)。本仓库的 `fixed` 包只修正官方安装器遗漏的 entitlements 并重打包，没有修改或重新编译 DEXT 驱动代码，详情见[驱动目录说明](Drivers/YT6801/README.md)。
 
 ## 声卡 CX8070：这台机器唯一需要"特殊处理"的地方
 
@@ -99,12 +108,12 @@ Conexant 的 HDA 芯片，AppleALC 支持得不算痛快，所以这套 EFI 里�
 - 内屏 2560×1600 180Hz 正常显示
 - 键盘、触摸板（VoodooI2C + VoodooPS2 两套都备着）、亮度键
 - Wi-Fi、蓝牙
+- 有线网卡（YT6801 DriverKit 驱动，需要先安装）
 - 电池电量、CPU 温度（SMCBatteryManager / SMCProcessor / SMCSuperIO）
 - USB
 - 声音
 
 ## 现在还不能干什么
 
-- 有线网口（YT6801 没驱动，请用 Wi-Fi）
 - 隔空投送、随航、通用控制这类 Continuity 功能
 - 睡眠唤醒之后什么都不出问题——这条我没法替你保证
