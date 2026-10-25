@@ -1,0 +1,33 @@
+Conexant CX8070 / AppleALC layout15 diagnostic commands
+
+This file is for the current USB EFI at D:\EFI.
+Boot macOS from the USB OpenCore entry first, then paste the commands below in Terminal.
+Do not run Reset NVRAM for this test.
+
+1) Verify the active boot arguments and loaded audio kexts:
+
+nvram -p | grep -E 'boot-args|alcid'
+kmutil showloaded --list-only | grep -Ei 'AppleALC|AppleHDA|Lilu'
+
+2) Check codec, layout and AppleHDA registration:
+
+ioreg -lw0 -r -c AppleHDAController | grep -E 'layout-id|alc-layout-id|AppleHDADriver|AppleHDACodecGeneric|HDAConfigDefault'
+system_profiler SPAudioDataType
+
+3) Capture the complete diagnostic archive on the Desktop:
+
+diag="$HOME/Desktop/hackintosh-diag"
+rm -rf "$diag"
+mkdir -p "$diag"
+system_profiler SPDisplaysDataType SPAudioDataType > "$diag/system-profiler.txt" 2>&1
+ioreg -lw0 -r -c AppleBacklightDisplay > "$diag/apple-backlight.txt" 2>&1
+ioreg -lw0 -r -c AppleHDAController > "$diag/apple-hda-controller.txt" 2>&1
+ioreg -lw0 -r > "$diag/ioreg.txt" 2>&1
+kmutil showloaded --list-only > "$diag/kexts.txt" 2>&1
+nvram -p > "$diag/nvram.txt" 2>&1
+log show --last boot --style compact --predicate '(eventMessage CONTAINS[c] "AppleALC") OR (eventMessage CONTAINS[c] "AppleHDA") OR (eventMessage CONTAINS[c] "layout15") OR (eventMessage CONTAINS[c] "CX8070") OR (eventMessage CONTAINS[c] "backlight") OR (eventMessage CONTAINS[c] "NVRM")' > "$diag/kernel-log.txt" 2>&1
+tar -czf "$HOME/Desktop/hackintosh-diag.tar.gz" -C "$HOME/Desktop" hackintosh-diag
+echo "Created: $HOME/Desktop/hackintosh-diag.tar.gz"
+
+Expected boot-args include: alcid=15 nvfb=1 nvaccel=1 nvfbheads=4 -nvkmsnosmooth gfxrst=4 nvrmacpibl=1
+Expected audio result: AppleHDADriver registered and an internal audio device listed.
